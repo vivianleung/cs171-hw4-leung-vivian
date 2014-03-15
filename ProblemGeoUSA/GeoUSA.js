@@ -3,14 +3,14 @@
  * Created by hen on 3/8/14.
  */
 var margin, width, height, bbVis, detailVis, canvas, svg, terPpad, re, pt;
-var projection, path, rScale, createVis, tooltip, tipHead, tipBody, center;
+var projection, path, rScale, createVis, tooltip, center;
 
 margin = { top: 50, right: 50, bottom: 50, left: 50 };
 
 width = 1060 - margin.left - margin.right;
 height = 800 - margin.bottom - margin.top;
 bbVis = { x: 100, y: 10, w: width - 100, h: 300 };
-tip = {w:100, h:50, dx:margin.left+bbVis.x+15, dy:margin.top+bbVis.y+20};
+tip = {t: margin.top+bbVis.y+20, l: margin.left+bbVis.x+20};
 terPpad = 15;
 luxFormat = d3.format('2.4s');
 re = new RegExp('[[(]]*');
@@ -107,12 +107,7 @@ function loadPage() {
   country.transition().duration(1000).attr("fill-opacity", 1);
   stations.transition().duration(1000).delay(function(d,i){return i*1.5}).attr("opacity", 0.7);
 
-  tooltip = d3.select('#vis').append("div")
-    .attr({class:'tip', visibility:'hidden'})
-    .style({width:tip.w+'px', height:tip.h+'px'});
-
-  tipHead = tooltip.append("p").attr({class: 'tip', id: "stn"});
-  tipBody = tooltip.append("p").attr({class: 'tip', id: "body"});
+  tooltip = d3.select('#vis').append("div").attr({class:'tip', visibility:'hidden'});
   
   stations.on("mouseover", function() {d3.selectAll('.tip').attr("visibility", 'visible')})
         .on("mouseout", function() {d3.selectAll('.tip').attr("visibility", 'hidden');})
@@ -121,14 +116,12 @@ function loadPage() {
 }
 
 function showTip() {
-  var pt = d3.select(this);
-  var ptData = pt.data()[0];
+  var tXY = d3.mouse(this);
+  var ptData = d3.select(this).data()[0];
   var ptSum = 'N/A';
   if (ptData.sum) { ptSum = luxFormat(ptData.sum); }
-  tipHead.innerHTML = (ptData.station.split(re)[0]).toUpperCase();
-  tipBody.innerHTML = "(USAF: "+ptData.usaf+")<br/>"+ptSum+" lux";
-  var tXY = pt[0][0].getBBox();
-  tooltip.style({left:(tip.dx+tXY.x)+'px', top:(tip.dy+tXY.y)+'px'});
+  d3.select('.tip').html((ptData.station.split(re)[0]).toUpperCase()+"<br/>(USAF: "+ptData.usaf+")<br/>"+ptSum+" lux");
+  tooltip.transition().duration(70).style({left:(tXY[0]+tip.l)+'px', top:(tXY[1]+tip.t)+'px' });
 }
 
 // ALL THESE FUNCTIONS are just a RECOMMENDATION !!!!
@@ -150,7 +143,6 @@ function zoomed() {
   var cX, cY, cK;
 
   /** 
-
     transition, translate and scale, and css selected accordingly
 
   */
@@ -158,10 +150,9 @@ function zoomed() {
   // ZOOM IN
   if( (center&&center!=click)||(!center) ) {
     cK = 4; 
-    if (click.classed('state')) { var CT=path.centroid(click); cX=CT[0]; cY=CT[1];}
-    else if (click.classed('station')) {cX=click.attr("cx"); cY=click.attr("cy"); }
+    if (click.classed('state') || click.classed('station')) { 
+      var CT=path.centroid(click); cX=CT[0]; cY=CT[1];}
     else { var mXY=d3.mouse(this); cX=mXY[0]-bbVis.x; cY=mXY[0]-bbVis.y; }
-
     click.classed("active", true); center = click;
   }
   else {
