@@ -7,26 +7,31 @@
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://d3js.org/queue.v1.min.js"></script>
 <script src="http://d3js.org/topojson.v1.min.js"></script>
-<script type="text/javascript" src="../jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="../libs/jquery-1.11.0.min.js"></script>
 <script src="../libs/FileSaver.js"></script>
 
 <div id="vis"></div>
 
 
 <script>
-
-
-    d3.json("../data/allData2003_2004.json",function(error,data){
-        console.log(data);
-
-        var allDates = [];
-        var timeParser = d3.time.format("%b %-d, %Y %X %p");
-        
-		// add your source code
-
+    var myData;
+    d3.json("../../allData2003_2004.json",function(error,data){
+        var reducedDataSet = {};
+        var dateParse = d3.time.format("%b %-d, %Y %X %p").parse;
+        var timeConvert = d3.time.format("%X %p");
+        d3.map(data).forEach(function(sta, staData) {
+            var staTV = {};
+            var staSum = 0;
+            staData.forEach(function(d) {
+                var thisT = timeConvert(dateParse(d.date));
+                var thisV = parseInt(d.value);
+                if (staTV[thisT]) { staTV[thisT] = staTV[thisT]+thisV; }
+                else {staTV[thisT] = thisV;}
+                staSum = staSum+thisV;
+            })
+            reducedDataSet[sta] =  {"sum": staSum, "hourly": staTV};
+        })
         saveToFile(reducedDataSet,"reducedMonthStationHour2003_2004.json")
-
-
 
     })
 

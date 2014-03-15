@@ -8,13 +8,14 @@
 <body>
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://d3js.org/topojson.v1.min.js"></script>
+<script src="../libs/jquery-1.11.0.min.js"></script>
 <style type="text/css">
     svg{
         /*background: #eeeeee;*/
     }
 
     .country{
-        fill: #dffaff;
+        fill: lightslategray;
         stroke:  steelblue;
     }
 
@@ -36,12 +37,11 @@
     }
 
     .station{
-        fill:lightgrey;
-        opacity: .7;
+        fill:grey;
     }
     .station.hasData{
-        fill:blue;
-        opacity: 1;
+        fill:crimson;
+     
     }
     .hourLine{
         fill:none;
@@ -62,8 +62,6 @@
 <table>
     <tr><td><div id="vis"></div></td><td><div id="detailVis"></div></td></tr>
 </table>
-
-
 <script src="GeoUSA.js"></script>
 
 </body>
