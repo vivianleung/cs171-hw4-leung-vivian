@@ -21,9 +21,6 @@ canvas = d3.select("#vis").append("svg").attr({
   width:width+margin.left+margin.right, height:height+margin.top+margin.bottom })
 svg = canvas.append("g").attr("transform","translate("+margin.left+","+margin.top+")");
 
-svg.append("rect").attr({class:"overlay",x:bbVis.x,y:bbVis.y,width:bbVis.w,height:bbVis.h})
-   .on("click",zoomed);
-
 rScale = d3.scale.linear().range([0.15,0.4]);
 
 // from https://gist.github.com/mbostock/5629120 to accomodate for 
@@ -37,7 +34,6 @@ var dataSet = {};
 
 // draws states
 d3.json("../data/us-named.json", function(error, data) {
-
   var usMap = topojson.feature(data,data.objects.states).features;
   country = svg.append("g").attr({id:'country',transform:"translate("+bbVis.x+","+bbVis.y+")"})
     .selectAll('.state').data(usMap).enter().append("path")
@@ -72,7 +68,7 @@ function loadStats() {
             else {
               staXY = projection.invert([bbVis.y+terPpad,bbVis.x+terPpad*shiftTerr++]);
             }
-            var values = {usaf: d.USAF, station:d.STATION, state:d.ST, sx:staXY[0], sy:staXY[1], conST:conST};
+            var values = {usaf: parseInt(d.USAF), station:d.STATION, state:d.ST, sx:staXY[0], sy:staXY[1], conST:conST};
             if (hourData[d.USAF] ) {
               if (hourData[d.USAF].sum > 0) {
                 $.extend(values, {sum: hourData[d.USAF].sum}, {hourly: hourData[d.USAF].hourly});
@@ -87,8 +83,14 @@ function loadStats() {
             else { return d3.descending(a.usaf, b.usaf)}  });
           noData.sort(function(a,b) { return d3.descending(a.usaf, b.usaf) });
           rScale.domain([hasData[0].sum, hasData.slice(-1)[0].sum]);
-          dataSet = hasData.concat(noData);
-
+          var allData = hasData.concat(noData);
+          dataSet = allData.map(function(d) {
+            var r;
+            if(d.sum > 0){r = rScale(d.sum);} else {r=0.1;}
+            var info = pt.origin([d.sx, d.sy]).angle(r)();
+            return {geometry: {coordinates:info.coordinates, type:info.type}, 
+                    id: d.usaf, properties:d, type:"Feature"}
+          });
           loadPage();
       }});
   }});
@@ -98,12 +100,12 @@ function loadStats() {
 
 function loadPage() {
 
-  stations = stations.selectAll(".station").data(dataSet).enter().append("path")
-        .attr("d", function(d) { var r;
-          if(d.sum > 0){r = rScale(d.sum);} else {r=0.1;}
-          return path(pt.origin([d.sx, d.sy]).angle(r)() ) })
-        .attr("class", function(d) {if(d.sum > 0){return "station hasData";} else {return"station";}})
-        .attr("opacity", 0)
+  stations = stations.selectAll(".station")
+    .data(dataSet).enter().append("path")
+    .attr("d", function(d) {return path(d.geometry) })
+    .attr("class", function(d) {if(d.properties.sum > 0){return "station hasData";} else {return"station";}})
+    .attr("opacity", 0)
+    .on("click", zoomed);
   country.transition().duration(1000).attr("fill-opacity", 1);
   stations.transition().duration(1000).delay(function(d,i){return i*1.5}).attr("opacity", 0.7);
 
@@ -111,15 +113,15 @@ function loadPage() {
   
   stations.on("mouseover", function() {d3.selectAll('.tip').attr("visibility", 'visible')})
         .on("mouseout", function() {d3.selectAll('.tip').attr("visibility", 'hidden');})
-        .on('mousemove', showTip)
-        .on("click", zoomed);
+        .on('mousemove', showTip);
 }
 
 function showTip() {
-  var tXY = d3.mouse(this);
-  var ptData = d3.select(this).data()[0];
+  console.log(d3.select(this))
+  var ptData = d3.select(this).data()[0].properties;
   var ptSum = 'N/A';
   if (ptData.sum) { ptSum = luxFormat(ptData.sum); }
+  var tXY = projection([ptData.sx, ptData.sy]);
   d3.select('.tip').html((ptData.station.split(re)[0]).toUpperCase()+"<br/>(USAF: "+ptData.usaf+")<br/>"+ptSum+" lux");
   tooltip.transition().duration(70).style({left:(tXY[0]+tip.l)+'px', top:(tXY[1]+tip.t)+'px' });
 }
@@ -136,34 +138,28 @@ var updateDetailVis = function(data, name){
 
 
 
-
+var clicker;
 // ZOOMING
-function zoomed() {
-  var click = d3.select(this);
+function zoomed(click) {
+  console.log(center, click);
+  clicker = click;
   var cX, cY, cK;
-
-  /** 
-    transition, translate and scale, and css selected accordingly
-
-  */
-  
   // ZOOM IN
-  if( (center&&center!=click)||(!center) ) {
+  if( (center&&center.data()[0]!=click)||(!center) ) {
     cK = 4; 
-    if (click.classed('state') || click.classed('station')) { 
-      var CT=path.centroid(click); cX=CT[0]; cY=CT[1];}
-    else { var mXY=d3.mouse(this); cX=mXY[0]-bbVis.x; cY=mXY[0]-bbVis.y; }
-    click.classed("active", true); center = click;
+    var CT=path.centroid(click); cX=CT[0]+bbVis.x; cY=CT[1]+bbVis.y;
+    d3.select(this).classed("active", true); center = d3.select(this);
   }
   else {
-    cX=width/2; cY=height/2; cK=1; center.classed("active",false); center=null;
+    cX=width/2; cY=height/2; cK=1; d3.select(center[0][0]).classed("active",false); center=null;
   }
 
   svg.transition().duration(750)
     .attr("transform","translate("+(width/2)+","+(height/2)+")scale("+cK+")translate("+(-cX)+","+(-cY)+")")
-    .attr("fill", function(){if (click.classed('state')||click.classed('station')){return "orange"} })
+    .attr("fill", function(){if (d3.select(this).classed('state')||d3.select(this).classed('station')){return "orange"} })
     .style("stroke-width", 1.5 / cK + "px");
 
 }
 
 
+  
