@@ -69,9 +69,10 @@
         fill:gray;
         opacity: .3;
     }
-    .tip text { fill: black; font-size: 12px;}
-    .tip .tipContent text#stn { font-weight: 700;}
-    .tip rect{ fill: lightgrey; fill-opacity: 0.8; }
+    .tip { position: absolute;
+           background: lightgrey; background-opacity: 0.8;
+           color: black; font-size: 12px;}
+    .tip p#stn { font-weight: 700;}
 
     .state.active, 
     .station.active 

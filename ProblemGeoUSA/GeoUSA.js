@@ -2,19 +2,19 @@
 /**
  * Created by hen on 3/8/14.
  */
-var margin, width, height, bbVis, detailVis, canvas, svg, ttPad, terPpad, re;
-var projection, path, rScale, createVis, tooltip, center;
+var margin, width, height, bbVis, detailVis, canvas, svg, terPpad, re, pt;
+var projection, path, rScale, createVis, tooltip, tipHead, tipBody, center;
 
 margin = { top: 50, right: 50, bottom: 50, left: 50 };
 
 width = 1060 - margin.left - margin.right;
 height = 800 - margin.bottom - margin.top;
 bbVis = { x: 100, y: 10, w: width - 100, h: 300 };
-ttPad = 4;
-ttLineH = 15;
+tip = {w:100, h:50, dx:margin.left+bbVis.x+15, dy:margin.top+bbVis.y+20};
 terPpad = 15;
 luxFormat = d3.format('2.4s');
 re = new RegExp('[[(]]*');
+
 detailVis = d3.select("#detailVis").append("svg").attr({ width:350, height:200 });
 
 canvas = d3.select("#vis").append("svg").attr({ 
@@ -24,13 +24,14 @@ svg = canvas.append("g").attr("transform","translate("+margin.left+","+margin.to
 svg.append("rect").attr({class:"overlay",x:bbVis.x,y:bbVis.y,width:bbVis.w,height:bbVis.h})
    .on("click",zoomed);
 
-rScale = d3.scale.linear().range([1,4]);
+rScale = d3.scale.linear().range([0.15,0.4]);
 
 // from https://gist.github.com/mbostock/5629120 to accomodate for 
 // USAF 785140, located in AQUADILLA/BORINQUEN, PUERTO RICO
 
 projection = d3.geo.albersUsa().translate([width / 2, height / 2]);//.precision(.1);
 path = d3.geo.path().projection(projection);
+pt = d3.geo.circle();
 
 var dataSet = {};
 
@@ -66,10 +67,10 @@ function loadStats() {
             var conST = false;
             var staXY;
             if (territories.indexOf(d.ST)==-1) {
-              staXY = projection([d["NSRDB_LON(dd)"], d["NSRDB_LAT (dd)"]]);
+              staXY = [d["NSRDB_LON(dd)"], d["NSRDB_LAT (dd)"]];
               conST = true;  }
             else {
-              staXY = [bbVis.y+terPpad,bbVis.x+terPpad*shiftTerr++];
+              staXY = projection.invert([bbVis.y+terPpad,bbVis.x+terPpad*shiftTerr++]);
             }
             var values = {usaf: d.USAF, station:d.STATION, state:d.ST, sx:staXY[0], sy:staXY[1], conST:conST};
             if (hourData[d.USAF] ) {
@@ -93,50 +94,41 @@ function loadStats() {
   }});
 }
 
-
+  
 
 function loadPage() {
 
-  stations = stations.selectAll(".station").data(dataSet).enter().append("circle")
-        .attr("cx",function(d){return d.sx}).attr("cy",function(d){return d.sy})
+  stations = stations.selectAll(".station").data(dataSet).enter().append("path")
+        .attr("d", function(d) { var r;
+          if(d.sum > 0){r = rScale(d.sum);} else {r=0.1;}
+          return path(pt.origin([d.sx, d.sy]).angle(r)() ) })
         .attr("class", function(d) {if(d.sum > 0){return "station hasData";} else {return"station";}})
         .attr("opacity", 0)
-        .attr("r", function(d) {if(d.sum > 0){return rScale(d.sum);} else {return 1.5;}});
   country.transition().duration(1000).attr("fill-opacity", 1);
-  stations.transition().duration(1000).delay(function(d,i){return i*1.5}).attr("opacity", 1);
+  stations.transition().duration(1000).delay(function(d,i){return i*1.5}).attr("opacity", 0.7);
 
-      tooltip = canvas.append("g").attr({class:'tip', visibility:'hidden'});
-      tooltip.append("rect")
-      tooltip.append("g").attr("class", "tipContent").selectAll('text').data(['STN','USAF','SUM'])
-        .enter().append("text")
-        .text(function(d) {return d});
+  tooltip = d3.select('#vis').append("div")
+    .attr({class:'tip', visibility:'hidden'})
+    .style({width:tip.w+'px', height:tip.h+'px'});
 
-      stations.on("mouseover", function() {tooltip.selectAll('*').attr("visibility", 'visible')})
-            .on("mouseout", function() {tooltip.selectAll('*').attr("visibility", 'hidden');})
-            .on('mousemove', showTip)
-            .on("click", zoomed);
+  tipHead = tooltip.append("p").attr({class: 'tip', id: "stn"});
+  tipBody = tooltip.append("p").attr({class: 'tip', id: "body"});
+  
+  stations.on("mouseover", function() {d3.selectAll('.tip').attr("visibility", 'visible')})
+        .on("mouseout", function() {d3.selectAll('.tip').attr("visibility", 'hidden');})
+        .on('mousemove', showTip)
+        .on("click", zoomed);
 }
 
-var clicker;
 function showTip() {
   var pt = d3.select(this);
   var ptData = pt.data()[0];
   var ptSum = 'N/A';
   if (ptData.sum) { ptSum = luxFormat(ptData.sum); }
-  var ttCont = [[(ptData.station.split(re)[0]).toUpperCase(), 'stn'], 
-           ["(USAF: "+ptData.usaf+")", 'usaf'], [ptSum+" lux", 'sum']];
-  tooltip.select('g.tipContent').selectAll('text').remove();
-  tooltip.select('g.tipContent').selectAll('text').data(ttCont)
-    .enter().append('text')
-    .attr("id", function(d) {return d[1]})
-    .attr("x", ttPad)
-    .attr("y", function(d, i) {return (i+1)*ttLineH})
-    .text(function(d) {return d[0]});
-  var ttLen = d3.select('g.tipContent')[0][0].getBBox();
-  tooltip.select('rect').attr({width:ttLen.width+ttPad*2, height:ttLen.height+ttPad*2});
-  tooltip.attr({transform:
-    "translate("+(parseFloat(pt.attr('cx'))+(ttLen.width)+ttPad)
-            +","+(parseFloat(pt.attr('cy'))+(ttLen.height)+ttPad)+")"});
+  tipHead.innerHTML = (ptData.station.split(re)[0]).toUpperCase();
+  tipBody.innerHTML = "(USAF: "+ptData.usaf+")<br/>"+ptSum+" lux";
+  var tXY = pt[0][0].getBBox();
+  tooltip.style({left:(tip.dx+tXY.x)+'px', top:(tip.dy+tXY.y)+'px'});
 }
 
 // ALL THESE FUNCTIONS are just a RECOMMENDATION !!!!
