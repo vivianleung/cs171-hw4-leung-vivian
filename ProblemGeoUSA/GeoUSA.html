@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title></title>
+    <title>
+        <link href='http://fonts.googleapis.com/css?family=Roboto:900,700,400,300' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Roboto+Condensed:300' rel='stylesheet' type='text/css'>
+</title>
 </head>
 
 
@@ -10,19 +13,33 @@
 <script src="http://d3js.org/topojson.v1.min.js"></script>
 <script src="../libs/jquery-1.11.0.min.js"></script>
 <style type="text/css">
-    svg{
-        /*background: #eeeeee;*/
+    body{
+        background: #222222;
+        font-family: 'Roboto', sans-serif;
+        font-weight: 400;
+        color: lightslategrey;
+        text-align: center;
     }
+    h1 {
+        font-weight: 900;
+        font-size: 36px;
+        margin-top: 40px;
+        margin-bottom: 2px;
+        color: white;
+    }
+    h2 {
+        text-align: center;
+        font-weight: 700;
+        font-size: 24px;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        color: lightslategrey;
 
-    .country{
-        fill: lightslategray;
+    }
+    .overlay{ fill:none; pointer-events: all;}
+    .state{
+        fill: darkslategray;
         stroke:  steelblue;
-    }
-
-    text{
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        font-size: 9pt;
-        /*font-weight: lighter;*/
     }
 
     .axis text {
@@ -37,26 +54,37 @@
     }
 
     .station{
-        fill:grey;
+        fill:lightgrey;
     }
     .station.hasData{
-        fill:crimson;
+        fill:yellow;
      
     }
     .hourLine{
         fill:none;
-        stroke:steelblue;
+        stroke:lightslategray;
 
     }
     .brush .extent{
         fill:gray;
         opacity: .3;
     }
+    .tip text { fill: black; font-size: 12px;}
+    .tip .tipContent text#stn { font-weight: 700;}
+    .tip rect{ fill: lightgrey; fill-opacity: 0.8; }
+
+    .state.active, 
+    .station.active 
+     { stroke: orange; fill:darkorange;}
+
+
+
 
 
 
 </style>
 
+<h1>ILLUMINATING AMERICA</h1>
 
 
 <table>

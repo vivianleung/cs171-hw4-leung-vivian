@@ -24,14 +24,15 @@
             var staSum = 0;
             staData.forEach(function(d) {
                 var thisT = timeConvert(dateParse(d.date));
-                var thisV = parseInt(d.value);
+                var thisV = parseInt(d.value)*100;
                 if (staTV[thisT]) { staTV[thisT] = staTV[thisT]+thisV; }
                 else {staTV[thisT] = thisV;}
                 staSum = staSum+thisV;
             })
             reducedDataSet[sta] =  {"sum": staSum, "hourly": staTV};
         })
-        saveToFile(reducedDataSet,"reducedMonthStationHour2003_2004.json")
+        myData = reducedDataSet;
+        /*saveToFile(reducedDataSet,"reducedMonthStationHour2003_2004.json")*/
 
     })
 
