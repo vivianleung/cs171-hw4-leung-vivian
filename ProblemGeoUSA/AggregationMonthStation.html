@@ -32,7 +32,8 @@
             reducedDataSet[sta] =  {"sum": staSum, "hourly": staTV};
         })
         myData = reducedDataSet;
-        /*saveToFile(reducedDataSet,"reducedMonthStationHour2003_2004.json")*/
+        saveToFile(reducedDataSet,"reducedMonthStationHour2003_2004.json");
+        d3.select('body').append("div").html("Finished reducing JSON.")
 
     })
 

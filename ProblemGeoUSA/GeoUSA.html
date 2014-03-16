@@ -23,7 +23,7 @@
         font-weight: 900;
         font-size: 36px;
         margin-top: 40px;
-        margin-bottom: 2px;
+        margin-bottom: 20px;
         color: white;
     }
     h2 {
@@ -35,6 +35,7 @@
         color: lightslategrey;
 
     }
+    #detailVis{ float:right;}
     .overlay{ fill:none; pointer-events: all;}
     .state{
         fill: darkslategray;
@@ -48,15 +49,17 @@
     .axis line,
     .axis path {
         fill: none;
-        stroke: #000;
+        stroke: white;
         shape-rendering: crispEdges;
     }
+    .axis text {fill:white;}
+    .axis .label, .axis .title {font-weight: 700}
 
     .station{
-        fill:lightgrey;
+        fill:grey;
     }
     .station.hasData{
-        fill:yellow;
+        fill:magenta;
      
     }
     .hourLine{
@@ -80,7 +83,10 @@
 
     .state.active, 
     .station.active 
-     { stroke: orange; fill:darkorange;}
+     { stroke: orange; stroke-width: 2px; ; fill:gold; opacity: 1; }
+    .station.active {z-index: 2000;}
+    .detailVis text{fill:white;}
+    .hour {stroke: none; border: none;}
 
 
 
@@ -88,7 +94,6 @@
 
 
 </style>
-
 <h1>ILLUMINATING AMERICA</h1>
 
 
