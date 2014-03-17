@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>
-        <link href='http://fonts.googleapis.com/css?family=Roboto:900,700,400,300' rel='stylesheet' type='text/css'>
+    <title>Illuminating America</title>
+    <link href='http://fonts.googleapis.com/css?family=Roboto:900,700,400,300' rel='stylesheet' type='text/css'>
     <link href='http://fonts.googleapis.com/css?family=Roboto+Condensed:300' rel='stylesheet' type='text/css'>
-</title>
 </head>
 
 
@@ -24,7 +23,7 @@
         font-weight: 900;
         font-size: 36px;
         margin-top: 40px;
-        margin-bottom: 2px;
+        margin-bottom: 20px;
         color: white;
     }
     h2 {
@@ -36,11 +35,13 @@
         color: lightslategrey;
 
     }
+    #detailVis{ float:right;}
     .overlay{ fill:none; pointer-events: all;}
     .state{
         fill: darkslategray;
         stroke:  steelblue;
     }
+    #terrTitle {fill: lightgrey; opacity: 0.7;}
 
     .axis text {
         font: 10px sans-serif;
@@ -49,15 +50,17 @@
     .axis line,
     .axis path {
         fill: none;
-        stroke: #000;
+        stroke: white;
         shape-rendering: crispEdges;
     }
+    .axis text {fill:white;}
+    .axis .label, .axis .title {font-weight: 700}
 
     .station{
-        fill:lightgrey;
+        fill:grey;
     }
     .station.hasData{
-        fill:yellow;
+        fill:magenta;
      
     }
     .hourLine{
@@ -69,13 +72,22 @@
         fill:gray;
         opacity: .3;
     }
-    .tip text { fill: black; font-size: 12px;}
-    .tip .tipContent text#stn { font-weight: 700;}
-    .tip rect{ fill: lightgrey; fill-opacity: 0.8; }
+    .tip { 
+        position: absolute;
+        text-align: center;
+        padding: 2px;
+        background: lightgrey; 
+        background-opacity: 0.8;
+        color: black; 
+        font-size: 12px;}
+    .tip#stn { font-weight: 700;}
 
     .state.active, 
     .station.active 
-     { stroke: orange; fill:darkorange;}
+     { stroke: orange; stroke-width: 2px; ; fill:gold; opacity: 1; }
+    .station.active {z-index: 2000;}
+    .detailVis text{fill:white;}
+    .hour {stroke: none; border: none;}
 
 
 
@@ -83,7 +95,6 @@
 
 
 </style>
-
 <h1>ILLUMINATING AMERICA</h1>
 
 
