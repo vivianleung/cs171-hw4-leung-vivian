@@ -9,20 +9,22 @@ var cK=1;
 
 margin = { top: 5, right: 25, bottom: 25, left: 25 };
 detailDiv = {w:350+margin.right, h:200, p:20}
-var Wsize = { w: document.documentElement.clientWidth, h:document.documentElement.clientHeight};
+var Wsize = {w: 1060, h:800}
+// var Wsize = { w: document.documentElement.clientWidth, h:document.documentElement.clientHeight};
 // $(window).resize(function() {
 //   Wsize.w = document.documentElement.clientWidth;
 //   Wsize.h = document.documentElement.clientHeight;
 //   canvas = d3.select("#vis").append("svg").attr({ 
 //     width:Wsize-detailDiv.w, height:Wsize.h-detailDiv.h })
 // })
-width = Wsize.w - margin.left - margin.right - detailDiv.w ;
+width = Wsize.w - margin.left - margin.right ;
 height = Wsize.h - margin.bottom - margin.top - $('h1').height(); 
 
 bbVis = { x: 100, y: 10, w: width - 100, h: 300 };
 bbDetail = { w:detailDiv.w-margin.right-4*detailDiv.p, h:detailDiv.h-4*detailDiv.p, x:detailDiv.p+5, y:detailDiv.p+5}
-tipP = 10;
+tipP = 8;
 terPpad = 15;
+terTitle = {w:100, h:20}
 luxFormat = d3.format('2.4s');
 re = new RegExp('[[(]]*');
 
@@ -53,7 +55,8 @@ d3.json("../data/us-named.json", function(error, data) {
     .on("click", zoomed);
 
   stations = svg.append("g").attr({id:'stations',transform:"translate("+bbVis.x+","+bbVis.y+")",
-        y:bbVis.y+bbVis.w});
+        });
+
 
   // see also: http://bl.ocks.org/mbostock/4122298
 
@@ -69,15 +72,14 @@ function loadStats() {
       d3.csv("../data/NSRDB_StationsMeta.csv",function(error,stnInfo){
         if (error) {console.log(error)}
         else{
-          var shiftTerr = 0;
-          var territories = ["PR", "GU", "HI", "VI"], hasData = [], noData = [];
+          var shiftTerr = 1;
+          var hasData = [], noData = [];
           stnInfo.forEach(function(d) {
-            var conST = false;
-            var staXY;
-            if (territories.indexOf(d.ST)==-1) {
-              staXY = [d["NSRDB_LON(dd)"], d["NSRDB_LAT (dd)"]];
-              conST = true;  }
-            else { staXY = projection.invert([bbVis.y+terPpad,bbVis.x+terPpad*shiftTerr++]); }
+            var conST = true;
+            var staXY = [d["NSRDB_LON(dd)"], d["NSRDB_LAT (dd)"]];
+            if (!projection(staXY)) {
+              staXY = projection.invert([bbVis.y+terPpad,bbVis.x+terTitle.h+terPpad*shiftTerr++]);
+              conST = false;  }
             var values = {usaf: parseInt(d.USAF), station:d.STATION, state:d.ST, sx:staXY[0], sy:staXY[1], conST:conST};
             if (hourData[d.USAF] ) {
               if (hourData[d.USAF].sum > 0) {
@@ -138,11 +140,13 @@ function loadPage() {
     .attr("class", function(d) {if(d.properties.sum > 0){return "station hasData";} else {return"station";}})
     .attr("opacity", 0)
     .on("click", zoomed);
+  terrTitle = d3.select('svg').append("text").attr({id: 'terrTitle',transform:"translate("+(margin.left+bbVis.y+terPpad*4)+","+(margin.top+bbVis.x+15)+")"})
+  .style("visibility","hidden").text('US Territories');
   country.transition().duration(1000).attr("opacity", 1);
   stations.transition().duration(1000).delay(function(d,i){return i*1.5}).attr("opacity", 0.7);
-  
+  terrTitle.transition().duration(1000).style({visibility: 'visible'});
 
-  tooltip = d3.select('#vis').append("div").attr({class:'tip', visibility:'hidden'});
+  tooltip = d3.select('#vis').append("div").attr({class:'tip'}).style({visibility:'hidden'});
   stations.on("mouseout", function() {d3.select('.tip').transition().duration(20).style("visibility", 'hidden')
                                       d3.select('.tip').html(null);})
         .on("mouseover", function() { d3.select('.tip').style("visibility", 'visible')})
@@ -156,7 +160,8 @@ function showTip() {
   if (ptData.sum) { ptSum = luxFormat(ptData.sum); }
   var tXY = d3.mouse(d3.select('#vis')[0][0]);
   d3.select('.tip').html((ptData.station.split(re)[0]).toUpperCase()+"<br/>(USAF: "+ptData.usaf+")<br/>"+ptSum+" lux");
-  tooltip.transition().duration(70).style({left:(tXY[0]+tipP/cK)+'px', top:(tXY[1]+tipP/cK)+'px' });
+  tooltip.transition().duration(70).style("left",(tXY[0]+tipP*cK)+'px')
+  .style("top", function() { return(tXY[1]+bbVis.x-this.offsetHeight-tipP*cK)+'px';} );
 }
 
 

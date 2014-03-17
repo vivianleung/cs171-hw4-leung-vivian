@@ -1,18 +1,34 @@
 /**
  * Created by hen on 3/8/14.
  */
-var margin, width, height, bbVis, svg, projectionMethods, actualProjectionMethod, colorMin, colorMax, dataSet;
 
-margin = { top: 50, right: 50, bottom: 50, left: 50 };
-width = 960 - margin.left - margin.right;
-height = 700 - margin.bottom - margin.top;
-bbVis = { x: 100, y: 10, w: width - 100, h: 300 };
+var margin = {
+    top: 50,
+    right: 50,
+    bottom: 50,
+    left: 50
+};
 
-dataSet = {};
+var width = 960 - margin.left - margin.right;
+var height = 700 - margin.bottom - margin.top;
 
-svg = d3.select("#vis").append("svg")
-    .attr({width:width+margin.left+margin.right,height:height+margin.top+margin.bottom})
-    .append("g").attr({transform:"translate("+margin.left+","+margin.top+")"});
+
+
+var bbVis = {
+    x: 100,
+    y: 10,
+    w: width - 100,
+    h: 300
+};
+
+var dataSet = {};
+
+var svg = d3.select("#vis").append("svg").attr({
+    width: width + margin.left + margin.right,
+    height: height + margin.top + margin.bottom
+}).append("g").attr({
+        transform: "translate(" + margin.left + "," + margin.top + ")"
+    });
 
 // --- this is just for fun.. play arround with it iof you like :)
 var projectionMethods = [
@@ -30,10 +46,18 @@ var projectionMethods = [
 // --- this is just for fun.. play arround with it iof you like :)
 
 
-actualProjectionMethod = 0;
-colorMin = colorbrewer.Greens[3][0]; colorMax = colorbrewer.Greens[3][2];
+var actualProjectionMethod = 0;
+var colorMin = colorbrewer.Greens[3][0];
+var colorMax = colorbrewer.Greens[3][2];
 
-path = d3.geo.path().projection(projectionMethods[1].method);
+
+
+var path = d3.geo.path().projection(projectionMethods[0].method);
+
+
+
+
+
 
 
 function runAQueryOn(indicatorString) {
@@ -57,10 +81,13 @@ function runAQueryOn(indicatorString) {
 var initVis = function(error, indicators, world){
     console.log(indicators);
     console.log(world);
-    // initialize map viz
+
+
 }
 
 
+// very cool queue function to make multiple calls.. 
+// see 
 queue()
     .defer(d3.csv,"../data/worldBank_indicators.csv")
     .defer(d3.json,"../data/world_data.json")
@@ -83,5 +110,8 @@ var changePro = function(){
     //svg.selectAll(".country").transition().duration(750).attr("d",path);
 };
 
-d3.select("body").append("button").text("changePro").on({"click":changePro});
+d3.select("body").append("button").text("changePro").on({
+    "click":changePro
+})
+
 
