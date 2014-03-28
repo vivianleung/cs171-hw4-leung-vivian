@@ -3,7 +3,7 @@
  * Created by hen on 3/8/14.
  */
 var margin, width, height, bbVis, detailVis, canvas, svg, terPpad, re, pt;
-var projection, path, rScale, createVis, tooltip, center, luxFormat;
+var projection, path, rScale, createVis, tooltip, center, luxFormat, times, yDom;
 var xScale, yScale, colorHour, xAxis, yAxis, area, graph;
 var cK=1;
 
@@ -36,7 +36,7 @@ canvas = d3.select("#vis").append("svg").attr({
   width:width+margin.left+margin.right, height:height+margin.top+margin.bottom })
 svg = canvas.append("g").attr("transform","translate("+margin.left+","+margin.top+")");
 
-rScale = d3.scale.linear().range([0.12,0.3]);
+rScale = d3.scale.pow().exponent(2).range([0.2,0.4]);
 
 projection = d3.geo.albersUsa().translate([width / 2, height / 2]);//.precision(.1);
 path = d3.geo.path().projection(projection);
@@ -94,7 +94,7 @@ function loadStats() {
             else if (a.sum < b.sum) {return 1;}
             else { return d3.descending(a.usaf, b.usaf)}  });
           noData.sort(function(a,b) { return d3.descending(a.usaf, b.usaf) });
-          rScale.domain([hasData[0].sum, hasData.slice(-1)[0].sum]);
+          rScale.domain([hasData.slice(-1)[0].sum, hasData[0].sum]);
           var allData = hasData.concat(noData);
           dataSet = allData.map(function(d) {
             var r;
@@ -105,10 +105,10 @@ function loadStats() {
           });
           
           var createDetailVis = function(){
-            var times = d3.keys(dataSet[0].properties.hourly);
-            var yDom = d3.values(dataSet[0].properties.hourly);
+            times = d3.keys(dataSet[0].properties.hourly);
+            yDom = d3.extent(d3.values(dataSet[0].properties.hourly));
             xScale = d3.scale.ordinal().domain(times).rangeRoundBands([0, bbDetail.w],.15,0);
-            yScale = d3.scale.linear().domain([d3.min(yDom), d3.max(yDom)]).range([bbDetail.h, 0]);
+            yScale = d3.scale.linear().domain(yDom).range([bbDetail.h, 0]);
             colorHour = d3.scale.quantile().domain(d3.range(24))
               .range(['#E66545','#FF9933','#FFD633','#FFD633','#FF9933','#E66545']);
             xAxis = d3.svg.axis().scale(xScale).orient("bottom")
@@ -120,8 +120,9 @@ function loadStats() {
               .selectAll("text").attr({ 'text-anchor': 'start', transform:"rotate(-45)",dx:-15,dy:10});
             d3.select('g.x.axis').append("text").attr({class:"label",x:bbDetail.w/2, dy:30}).text("Hour"); 
             detailVis.append("g").attr({class:'y axis',transform:"translate("+bbDetail.w+",0)"}).call(yAxis)
-              .append("text").attr({class:"label",x:bbDetail.w,y:0}).text("Lux");
+              .append("text").attr({class:"label",x:bbDetail.w-5,y:0}).text("Lux");
             d3.selectAll('.detailVis').attr("visibility","hidden");
+            d3.select('input[name="detailXY"]').on('click',function() {if(center){updateDetailVis()} });
           }
 
           loadPage();
@@ -129,8 +130,6 @@ function loadStats() {
       }});
   }});
 }
-
-// ALL THESE FUNCTIONS are just a RECOMMENDATION !!!!
 
 function loadPage() {
 
@@ -151,6 +150,7 @@ function loadPage() {
                                       d3.select('.tip').html(null);})
         .on("mouseover", function() { d3.select('.tip').style("visibility", 'visible')})
         .on('mousemove', showTip);
+
         
 }
 
@@ -166,31 +166,49 @@ function showTip() {
 
 
 
-function updateDetailVis(station){
+function updateDetailVis(){
   // check if data sum is zero. if so, then just set up an empty graph
+  var station = center.data()[0].properties;
+  d3.select('#detailTitle').remove();
+  d3.select('.detailVis .graph').remove();
+
   graph = detailVis.append("g").attr("class","graph");
-  d3.select('#detailVis').insert("div",":first-child").attr({class:'detailVis graph title',top:0,left:0})  
+  d3.select('#detailVis').insert("div",":first-child").attr({id:'detailTitle',top:0,left:0})  
     .html(station.station+', '+station.state);
   d3.selectAll('.detailVis').style("visibility","visible");
   if (station.sum > 0) {
+    var dom = d3.entries(station.hourly);     
+    if(d3.select('input[name="detailXY"]')[0][0].checked) {
+      dom = dom.filter(function(d) { return d.value > 0; })
+      xScale.domain(dom.map(function(d) {return d.key}));
+      yScale.domain([0,d3.max(dom.map(function(d) {return d.value}))]);
+    }
+    else {
+      xScale.domain(times);
+      yScale.domain(yDom);
+    }
     var barW = xScale.rangeBand();
-    var ext = d3.extent(d3.values(station.hourly));
-    yScale.domain([ext[1],ext[0]]);
+    xAxis.scale(xScale).tickValues(xScale.domain().filter(function(d,i){return i%2==0}));
     yAxis.scale(yScale);
-    svg.select(".y.axis").transition().call(yAxis);
-    var hours = graph.selectAll('.hour').data(d3.entries(station.hourly))
+    var hours = graph.selectAll('.hour').data(dom)
       .enter().append('rect').attr({class:'hour',width:barW,stroke:'none'});
-      
+    detailVis.select('g.x.axis').call(xAxis).selectAll("text:not(.label)").attr({ 'text-anchor': 'start', transform:"rotate(-45)",dx:-15,dy:10});
+    detailVis.select('g.y.axis').call(yAxis);
     hours.transition().duration(500)
-      .attr('height', function(d){return yScale(d.value)})
+      .attr('height', function(d){return bbDetail.h-yScale(d.value)})
       .attr('transform', function(d) {
-        return "translate("+xScale(d.key)+","+(bbDetail.h-yScale(d.value))+")" })
+        return "translate("+xScale(d.key)+","+(yScale(d.value))+")" })
       .attr('fill', function(d){return colorHour(parseInt(d.key.slice(0,2))) });
+
+  
   }
   else {
     graph.append("text").transition().duration(500).attr("transform","translate("+(bbDetail.w/2-detailDiv.p)+","+(bbDetail.h/2)+")")
       .text("No Data Available");
   }
+  
+
+
 
 }
 
@@ -199,9 +217,10 @@ function updateDetailVis(station){
 // ZOOMING
 function zoomed(click) {
   var cX, cY;
-  // remove old detailVis stuff
+  var terVisible;
+
+  
   // ZOOM IN
-  d3.selectAll('.detailVis .graph').remove();
   d3.selectAll('.detailVis').style("visibility","hidden");
   d3.selectAll('.station, .state').classed("active",false);
   if( (center&&center.data()[0]!=click)||(!center) ) {
@@ -209,17 +228,19 @@ function zoomed(click) {
     var CT=path.centroid(click); cX=CT[0]+bbVis.x; cY=CT[1]+bbVis.y;
 
     d3.select(this).classed("active", true); center = d3.select(this);
-    if (d3.select(this).classed('station')) { updateDetailVis(click.properties) }
+    if (d3.select(this).classed('station')) { updateDetailVis(); }
+    terrTitle.transition().duration(750).style("visibility","hidden");
+
   }
   else {
     cX=width/2; cY=height/2; cK=1; center=null;
+    terrTitle.transition().duration(750).style("visibility","visible");
   }
 
   svg.transition().duration(750)
     .attr("transform","translate("+(width/2)+","+(height/2)+")scale("+cK+")translate("+(-cX)+","+(-cY)+")")
     .attr("fill", function(){if (d3.select(this).classed('state')||d3.select(this).classed('station')){return "orange"} })
     .style("stroke-width", 1.5 / cK + "px");
-
 }
 
 

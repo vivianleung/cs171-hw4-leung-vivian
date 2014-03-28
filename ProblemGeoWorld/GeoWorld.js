@@ -14,49 +14,37 @@ svg = d3.select("#vis").append("svg")
     .attr({width:width+margin.left+margin.right,height:height+margin.top+margin.bottom})
     .append("g").attr({transform:"translate("+margin.left+","+margin.top+")"});
 
-// --- this is just for fun.. play arround with it iof you like :)
-var projectionMethods = [
-    {
-        name:"mercator",
-        method: d3.geo.mercator().translate([width / 2, height / 2])//.precision(.1);
-    },{
-        name:"equiRect",
-        method: d3.geo.equirectangular().translate([width / 2, height / 2])//.precision(.1);
-    },{
-        name:"stereo",
-        method: d3.geo.stereographic().translate([width / 2, height / 2])//.precision(.1);
-    }
-];
-// --- this is just for fun.. play arround with it iof you like :)
+var projectionMethods = [ //.precision(.1);
+    { name:"mercator", method: d3.geo.mercator().translate([width / 2, height / 2]) },
+    { name:"equiRect", method: d3.geo.equirectangular().translate([width / 2, height / 2]) },
+    { name:"stereo",   method: d3.geo.stereographic().translate([width / 2, height / 2]) }];
 
-
-actualProjectionMethod = 0;
+actualProjectionMethod = projectionMethods.length-1;
 colorMin = colorbrewer.Greens[3][0]; colorMax = colorbrewer.Greens[3][2];
-
-path = d3.geo.path().projection(projectionMethods[1].method);
-
 
 function runAQueryOn(indicatorString) {
     $.ajax({
         url: "http://api.worldbank.org/countries/all/indicators/"+indicatorString+"?format=jsonP&prefix=Getdata&per_page=500&date=2000", //do something here
         jsonpCallback:'getdata',
         dataType:'jsonp',
-        success: function (data, status){
-            
-            data[1].forEach(function(d) {console.log(d.country.value, d.date, d.decimal)});
-
-            console.log(status);
-        }
-
+        success: function (data, status){console.log(status); }
     });
-
-
 }
 
 
 var initVis = function(error, indicators, world){
-    console.log(indicators);
     console.log(world);
+    console.log(indicators);
+
+    svg.append('g').attr('id','countries').selectAll(".country")
+        .data(world.features).enter().append('path')
+        .attr('class','country');
+
+    $( "#indicator" ).autocomplete({
+      source: availableTags
+    });
+
+    changePro();
     // initialize map viz
 }
 
@@ -80,8 +68,9 @@ var changePro = function(){
 
     textLabel.text(projectionMethods[actualProjectionMethod].name);
     path= d3.geo.path().projection(projectionMethods[actualProjectionMethod].method);
-    //svg.selectAll(".country").transition().duration(750).attr("d",path);
+    svg.selectAll(".country").transition().duration(750).attr("d",function(d) {return path(d.geometry)});
 };
 
 d3.select("body").append("button").text("changePro").on({"click":changePro});
 
+runAQueryOn('SH.TBS.INCD')
