@@ -22,30 +22,6 @@ svg = d3.select("#vis").append("svg")
 
 
 
-function runAQueryOn(indicatorString) {
-    $.ajax({
-        url: "http://api.worldbank.org/countries/all/indicators/"+indicatorString+"?format=jsonP&prefix=Getdata&per_page=500&date=2000", //do something here
-        jsonpCallback:'getdata',
-        dataType:'jsonp',
-        success: function (data, status){
-            var inDom = [Number.MAX_VALUE, 0];
-            data[1].forEach(function(d){ 
-                if (d.value) { 
-                    d.value = parseFloat(d.value + "." + d.decimal); 
-                    if (d.value < inDom[0]) {inDom[0] = d.value;}
-                    else if (d.value > inDom[1]) {inDom[1] = d.value;}
-                }
-
-                d.date = parseInt(d.date);
-                delete d.decimal;
-                dataSet[d.country.id] = d;  
-            });
-            colorScale.domain(inDom);
-                changePro();
-
-        }
-    });
-}
 
 var getCountryIDs = function(file, callback) { 
     d3.json(file, function(world) {
@@ -70,6 +46,8 @@ var initVis = function(error, indicators, world){
         .attr('class','country');
     // var IndicatorNames = indicators.map(function(d){ return d.IndicatorName})
     // $( "#indicator" ).autocomplete({source: IndicatorNames});
+
+
     runAQueryOn('SH.TBS.INCD');
 }
 
@@ -100,12 +78,57 @@ var changePro = function(){
     svg.selectAll(".country").transition().duration(750)
     .attr("d",function(d) {return path(d.geometry)})
     .attr("fill",function(d) {
-        if (dataSet[d.id]) { 
-            console.log(colorScale(dataSet[d.id].value));
-            return colorScale(dataSet[d.id].value); }
+        if (dataSet[d.id]) { return colorScale(dataSet[d.id].value); }
         else {return 'grey'}
     });
+    var lRange = colorScale.range().map(function(d) {return colorScale.invertExtent(d)[0]})
+    lRange.push(colorScale.domain()[1]);
+    var lTick = {w: 50, p:5};
+    var lScale = d3.scale.linear().domain(colorScale.domain()).range([0, 100]);
+    var lAxis = d3.svg.axis().scale(lScale).orient("right").tickSize(lTick.w+lTick.p).tickValues(lRange);
+    var legend = svg.append("g").attr({class:"key", transform:"translate(-40,"+
+            (height-margin.top-margin.bottom-2*lTick.p+30)+")"});
+    legend.selectAll("rect")
+        .data(colorScale.range().map(function(d,i) {
+          return { y0: lScale(lRange[i]), y1: lScale(lRange[i+1]), z: d };
+        }))
+        .enter().append("rect")
+        .attr("width", lTick.w)
+        .attr("y", function(d) { return d.y0; })
+        .attr("height", function(d) { return d.y1 - d.y0; })
+        .style("fill", function(d) { return d.z; });
+
+    legend.call(lAxis).append("text")
+        .attr("class", "caption").attr({"alignment-baseline":"before-edge", y:lScale.range()[1]+2*lTick.p})
+        .text(dataSet.indicator.value);
+        
+
 };
 
 d3.select("body").append("button").text("changePro").on({"click":changePro});
 
+function runAQueryOn(indicatorString) {
+    $.ajax({
+        url: "http://api.worldbank.org/countries/all/indicators/"+indicatorString+"?format=jsonP&prefix=Getdata&per_page=500&date=2000", //do something here
+        jsonpCallback:'getdata',
+        dataType:'jsonp',
+        success: function (data, status){
+            var inDom = [Number.MAX_VALUE, 0];
+            dataSet.indicator = data[1][0].indicator;
+            data[1].forEach(function(d){ 
+                if (d.value) { 
+                    d.value = parseFloat(d.value + "." + d.decimal); 
+                    if (d.value < inDom[0]) {inDom[0] = d.value;}
+                    else if (d.value > inDom[1]) {inDom[1] = d.value;}
+                }
+
+                d.date = parseInt(d.date);
+                delete d.decimal;
+                dataSet[d.country.id] = d;  
+            });
+            colorScale.domain(inDom);
+                changePro();
+
+        }
+    });
+}
