@@ -12,6 +12,7 @@
 <script type="text/javascript" src="../libs/jquery-1.11.0.min.js"></script>
 <script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
 <script type="text/javascript" src="../libs/colorbrewer.js"></script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
 
 
 
@@ -46,17 +47,25 @@
         fill: black;
     }
 
+
+
 </style>
 
 
 <table>
     <tr>
-        <td><div id="vis"></div></td><td><div id="textLabel"></div></td>
+        <td><div id="vis"></div></td>
+        <td><div id="textLabel"></div></td>
     </tr>
 </table>
-<div id="selector">
+<div class="settings">
+    <label for="selectorYear">Year</label> 
+    <input id="selectorYear">
+    <label for="indicator">Indicator Search</label>
     <input id="indicator">
-    <div id="selectorYear"></div>
+    <br/>
+    <select name="filtered" size="6"></select>
+    
 </div>
 
 
